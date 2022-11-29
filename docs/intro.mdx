@@ -1,0 +1,77 @@
+---
+sidebar_position: 1
+---
+
+# Tutorial Intro
+
+Let's discover **RabonaJS in less than 5 minutes**.
+
+## Getting Started
+
+Get started by **creating a new pitch**. Aim of this library is to help you to create a pitch or a football field with JS.
+
+
+```js
+import Rabona from 'rabonajs';
+
+const pitchOptions = {
+  scaler: 6,
+  height: 80,
+  width: 120,
+  padding: 100,
+  linecolour: '#ffffff',
+  fillcolour: '#7ec850',
+};
+
+const pitch = Rabona.pitch('pitch', pitchOptions);
+
+```
+
+```html
+<div id="pitch"></div>
+```
+
+
+## MDX and React Components
+
+[MDX](https://mdxjs.com/) can make your documentation more **interactive** and allows using any **React components inside Markdown**:
+
+```jsx
+export const Highlight = ({children, color}) => (
+  <span
+    style={{
+      backgroundColor: color,
+      borderRadius: '20px',
+      color: '#fff',
+      padding: '10px',
+      cursor: 'pointer',
+    }}
+    onClick={() => {
+      alert(`You clicked the color ${color} with label ${children}`)
+    }}>
+    {children}
+  </span>
+);
+
+This is <Highlight color="#25c2a0">Docusaurus green</Highlight> !
+
+This is <Highlight color="#1877F2">Facebook blue</Highlight> !
+```
+
+export const Highlight = ({children, color}) => (
+  <span
+    style={{
+      backgroundColor: color,
+      borderRadius: '20px',
+      color: '#fff',
+      padding: '10px',
+      cursor: 'pointer',
+    }}
+    onClick={() => {
+      alert(`You clicked the color ${color} with label ${children}`);
+    }}>
+    {children}
+  </span>
+);
+
+This is <Highlight color="#25c2a0">Docusaurus green</Highlight> !
