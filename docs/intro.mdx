@@ -9,69 +9,89 @@ Let's discover **RabonaJS in less than 5 minutes**.
 ## Getting Started
 
 Get started by **creating a new pitch**. Aim of this library is to help you to create a pitch or a football field with JS.
-
+The central class of the API is Rabona. It is used to create a pitch.
 
 ```js
-import Rabona from 'rabonajs';
+import Rabona from "rabonajs";
 
 const pitchOptions = {
-  scaler: 6,
-  height: 80,
-  width: 120,
-  padding: 100,
-  linecolour: '#ffffff',
-  fillcolour: '#7ec850',
+  scaler: 6, //constant to resize the pitch
+  height: 80, //px
+  width: 120, //px
+  padding: 100, //px
+  linecolour: "#ffffff",
+  fillcolour: "#7ec850",
 };
 
-const pitch = Rabona.pitch('pitch', pitchOptions);
-
+// initialize the pitch on the "pitch" div with a given options
+const pitch = Rabona.pitch("pitch", pitchOptions);
 ```
 
 ```html
 <div id="pitch"></div>
 ```
+Providing a default options and a div to inject that's all you need to create a pitch! 🏟
 
 
-## MDX and React Components
+## An example with React
 
-[MDX](https://mdxjs.com/) can make your documentation more **interactive** and allows using any **React components inside Markdown**:
+You can use a **useRef** hook to get the DOM element in which you're going to inject the pitch.
+We are keeping the pitch status in a state variable. We are using the **useEffect** hook to initialize the pitch.
+We need provide a default style to the pitch div as well.
 
 ```jsx
-export const Highlight = ({children, color}) => (
-  <span
-    style={{
-      backgroundColor: color,
-      borderRadius: '20px',
-      color: '#fff',
-      padding: '10px',
-      cursor: 'pointer',
-    }}
-    onClick={() => {
-      alert(`You clicked the color ${color} with label ${children}`)
-    }}>
-    {children}
-  </span>
-);
+import Rabona from "rabonajs";
+import { useEffect, useRef, useState } from "react";
 
-This is <Highlight color="#25c2a0">Docusaurus green</Highlight> !
+export const PitchComponent = () => {
+  const [pitch, setPitch] = useState(null);
+  const pitchRef = useRef(null);
 
-This is <Highlight color="#1877F2">Facebook blue</Highlight> !
+  const pitchOptions = {
+    scaler: 6, //constant to resize the pitch
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch", pitchOptions);
+      setPitch(pitch);
+    }
+  }, []);
+
+  return (
+    <div id="pitch" ref={pitchRef} style={{ width: "500px", margin: "auto" }} />
+  );
+};
 ```
 
-export const Highlight = ({children, color}) => (
-  <span
-    style={{
-      backgroundColor: color,
-      borderRadius: '20px',
-      color: '#fff',
-      padding: '10px',
-      cursor: 'pointer',
-    }}
-    onClick={() => {
-      alert(`You clicked the color ${color} with label ${children}`);
-    }}>
-    {children}
-  </span>
-);
+import Rabona from "rabonajs";
+import { useEffect, useRef, useState } from "react";
 
-This is <Highlight color="#25c2a0">Docusaurus green</Highlight> !
+export const PitchComponent = () => {
+  const [pitch, setPitch] = useState(null);
+  const pitchRef = useRef(null);
+  const pitchOptions = {
+    scaler: 6, //constant to resize the pitch
+    height: 80, //px
+    width: 120, //px
+    padding: 100, //px
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch", pitchOptions);
+      setPitch(pitch);
+    }
+  }, []);
+  return (
+    <div id="pitch" ref={pitchRef} style={{ width: "500px", margin: "auto" }} />
+  );
+};
+
+<PitchComponent />
