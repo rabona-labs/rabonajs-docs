@@ -1,0 +1,229 @@
+---
+sidebar_position: 1
+---
+
+# Plot Passes on a Pitch
+
+Example shows how to plot passes on a pitch using the 'passLayer' type of **Rabona.layer**.
+
+We will start with the Rabona import.
+
+## Import Rabona and initiate the pitch
+
+We will use the same techinque as in the [previous example](https://rabona.io/docs/intro) to import Rabona and initiate the pitch.
+
+```jsx
+import Rabona from "rabonajs";
+import { useEffect, useRef, useState } from "react";
+
+export const PitchComponent = () => {
+  const [pitch, setPitch] = useState(null);
+
+  const pitchOptions = {
+    scaler: 6, //constant to resize the pitch
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch", pitchOptions);
+      setPitch(pitch);
+    }
+  }, []);
+
+  return (
+    <div id="pitch" style={{ width: "500px", margin: "auto" }} />
+  );
+};
+```
+
+import Rabona from "rabonajs";
+import { useEffect, useRef, useState } from "react";
+
+export const PitchComponent = () => {
+  const [pitch, setPitch] = useState(null);
+  const pitchOptions = {
+    scaler: 6, //constant to resize the pitch
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch", pitchOptions);
+      setPitch(pitch);
+    }
+  }, []);
+  return (
+    <div id="pitch" style={{ width: "500px", margin: "auto" }} />
+  );
+};
+
+<PitchComponent />
+
+## Pitch Size
+
+Different stadiums have different sizes in real world. Moreover, different data providers might serve their data in different coordinate system.
+In the next couple of examples we are going to use statsbomb data so we will create the pitch accordingly. Thankfully Stasbomb provides a standard for that in their
+[documentation](file:///Users/hunor/Downloads/StatsBomb%20Open%20Data%20Specification%20v1.1.pdf).
+For instance WyScout data is in a different coordinate system.[documentation](https://apidocs.wyscout.com/#section/Data-glossary-and-definitions)
+The pitch size is defined by the **width** and **height** properties of the pitch. Top left corner is the origin of the coordinate system.
+
+![image](/img/statsbomb_pitch.png)
+
+Setting the pitch size to 120x80 will do the job for us.
+
+```js
+ const pitchOptions = {
+    ...
+    height: 80,
+    width: 120,
+   ...
+  };
+```
+
+## Plotting passes
+
+A Pass Layer should have the following properties:
+
+- **startX** - x coordinate of the starting point of the pass
+- **startY** - y coordiante of the the starting point of the pass
+- **endX** - x coordinate of the end point of the pass
+- **endY** - y coordinate of the end point of the pass
+
+Let's create some mock passes to draw on the pitch. X coordinate is the horizontal axes and the Y coordinate is the vertical axis.
+
+```js
+const passes = [];
+for (let i = 0; i < 10; i++) {
+  passes.push({
+    startX: Math.floor(Math.random() * 120),
+    startY: Math.floor(Math.random() * 80),
+    endX: Math.floor(Math.random() * 120),
+    endY: Math.floor(Math.random() * 80),
+  });
+}
+```
+
+Everything above the pitch is a Layer in Rabona. We can add a Pass Layer to the pitch by calling the **addLayer** method of the pitch.
+We can create a new layer by calling the **layer** method of the Rabona object. The layer method takes three arguments:
+
+- **type** - the type of the layer. In our case it is **passLayer**
+- **options** - the options of the layer. Stylistic options like the color of the passes, the width of the passes, etc.
+- **data** - the data of the layer. In our case it is an array of passes
+
+by calling **addTo** method of the layer we can add the layer to the pitch.
+
+```js
+const layer = Rabona.layer({
+  type: "passLayer",
+  data: passes,
+  options: {
+    color: "yellow",
+    width: 1.5,
+    showArrows: true,
+    radius: 3,
+  },
+}).addTo(pitch);
+```
+
+The result is the following:
+
+export const PitchComponentWithPasses = () => {
+  const [pitch, setPitch] = useState(null);
+  const pitchOptions = {
+    scaler: 6, //constant to resize the pitch
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch2", pitchOptions);
+      setPitch(pitch);
+      const passes = [];
+      for (let i = 0; i < 10; i++) {
+        passes.push({
+          startX: Math.floor(Math.random() * 120),
+          startY: Math.floor(Math.random() * 80),
+          endX: Math.floor(Math.random() * 120),
+          endY: Math.floor(Math.random() * 80),
+        });
+      }
+      const layer = Rabona.layer({
+        type: "passLayer",
+        data: passes,
+        options: {
+          color: "yellow",
+          width: 1.5,
+          showArrows: true,
+          radius: 3,
+        },
+      }).addTo(pitch);
+    }
+  }, []);
+  return (
+    <div
+      id="pitch2"
+      style={{ width: "750px", margin: "auto" }}
+    />
+  );
+};
+
+<PitchComponentWithPasses />
+
+
+## Updating React Component
+
+```jsx
+export const PitchComponentWithPasses = () => {
+  const [pitch, setPitch] = useState(null);
+  const pitchOptions = {
+    scaler: 6, //constant to resize the pitch
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitchWithPasses", pitchOptions);
+      setPitch(pitch);
+      const passes = [];
+      for (let i = 0; i < 10; i++) {
+        passes.push({
+          startX: Math.floor(Math.random() * 120),
+          startY: Math.floor(Math.random() * 80),
+          endX: Math.floor(Math.random() * 120),
+          endY: Math.floor(Math.random() * 80),
+        });
+      }
+      const layer = Rabona.layer({
+        type: "passLayer",
+        data: passes,
+        options: {
+          color: "yellow",
+          width: 1.5,
+          showArrows: true,
+          radius: 3,
+        },
+      }).addTo(pitch);
+    }
+  }, []);
+  return (
+    <div
+      id="pitchWithPasses"
+      style={{ width: "750px", margin: "auto" }}
+    />
+  );
+};
+```
