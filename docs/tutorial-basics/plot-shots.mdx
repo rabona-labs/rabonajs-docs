@@ -1,0 +1,117 @@
+---
+sidebar_position: 2
+---
+
+# Plot Shots
+
+In this example we are going to plot mock shot data. We will use different styles for
+goals and misses.
+
+Let's start by importing Rabona and generate data we are going to use.
+
+```jsx
+import Rabona from "rabonajs";
+import { useEffect, useRef, useState } from "react";
+
+// generates mock data with the given interval
+const randomIntFromInterval = (min, max) => {
+  return Math.floor(Math.random() * (max - min + 1) + min)
+}
+
+
+export const ShotsComponent = () => {
+  const [pitch, setPitch] = useState(null);
+  // generate random shot data
+  const shots = [];
+  for (let i = 0; i < 10; i++) {
+    shots.push({
+      startX: randomIntFromInterval(120,90), // random x position around 6yard box
+      startY: randomIntFromInterval(65,25), // random y position around 6yard box
+      endX: 120,
+      endY: randomIntFromInterval(45,35), // random y position in the goal
+      result: Math.random() > 0.5 ? "goal" : "miss",
+    });
+  }
+  const pitchOptions = {
+    scaler: 6, //constant to resize the pitch
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch", pitchOptions);
+      setPitch(pitch);
+      const layer = Rabona.layer({
+        type: "ballMovement",
+        data: shots,
+        options: {
+          color: "yellow",
+          width: 1.5,
+          showArrows: true,
+          radius: 3,
+        },
+      }).addTo(pitch);
+    }
+  }, []);
+  return <div id="pitch" style={{ width: "750px", margin: "auto" }} />;
+};
+```
+
+
+import Rabona from "rabonajs";
+import { useEffect, useRef, useState } from "react";
+const randomIntFromInterval = (min, max) => {
+  return Math.floor(Math.random() * (max - min + 1) + min)
+}
+export const ShotsComponent = () => {
+  const [pitch, setPitch] = useState(null);
+  // generate random shot data
+  const shots = [];
+  for (let i = 0; i < 10; i++) {
+    shots.push({
+      startX: randomIntFromInterval(120,90),
+      startY: randomIntFromInterval(65,25),
+      endX: 120,
+      endY: randomIntFromInterval(45,35),
+      result: Math.random() > 0.5 ? "goal" : "miss",
+    });
+  }
+  const pitchOptions = {
+    scaler: 6, //constant to resize the pitch
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch", pitchOptions);
+      setPitch(pitch);
+      const layer = Rabona.layer({
+        type: "ballMovement",
+        data: shots,
+        options: {
+          color: "yellow",
+          width: 1.5,
+          showArrows: true,
+          radius: 3,
+        },
+      }).addTo(pitch);
+    }
+  }, []);
+  return <div id="pitch" style={{ width: "750px", margin: "auto" }} />;
+};
+
+<ShotsComponent/>
+
+## Customizing the plot
+
+We can customize the plot by add custom styles for **ballMovement** layer.
+
+// TODO add getColor function
+
+```jsx

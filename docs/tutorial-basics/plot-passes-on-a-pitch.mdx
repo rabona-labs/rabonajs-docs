@@ -4,7 +4,10 @@ sidebar_position: 1
 
 # Plot Passes on a Pitch
 
-Example shows how to plot passes on a pitch using the 'passLayer' type of **Rabona.layer**.
+Example shows how to plot passes on a pitch using the 'ballMovement' type of **Rabona.layer**.
+
+Ball movement layer is a special type of layer that plots passes and shots on a pitch. 
+It is a good way to visualize the ball movement of a team or a player.
 
 We will start with the Rabona import.
 
@@ -35,9 +38,7 @@ export const PitchComponent = () => {
     }
   }, []);
 
-  return (
-    <div id="pitch" style={{ width: "500px", margin: "auto" }} />
-  );
+  return <div id="pitch" style={{ width: "500px", margin: "auto" }} />;
 };
 ```
 
@@ -60,9 +61,7 @@ export const PitchComponent = () => {
       setPitch(pitch);
     }
   }, []);
-  return (
-    <div id="pitch" style={{ width: "500px", margin: "auto" }} />
-  );
+  return <div id="pitch" style={{ width: "500px", margin: "auto" }} />;
 };
 
 <PitchComponent />
@@ -114,7 +113,7 @@ for (let i = 0; i < 10; i++) {
 Everything above the pitch is a Layer in Rabona. We can add a Pass Layer to the pitch by calling the **addLayer** method of the pitch.
 We can create a new layer by calling the **layer** method of the Rabona object. The layer method takes three arguments:
 
-- **type** - the type of the layer. In our case it is **passLayer**
+- **type** - the type of the layer. In our case it is **ballMovement**
 - **options** - the options of the layer. Stylistic options like the color of the passes, the width of the passes, etc.
 - **data** - the data of the layer. In our case it is an array of passes
 
@@ -122,7 +121,7 @@ by calling **addTo** method of the layer we can add the layer to the pitch.
 
 ```js
 const layer = Rabona.layer({
-  type: "passLayer",
+  type: "ballMovement",
   data: passes,
   options: {
     color: "yellow",
@@ -159,7 +158,7 @@ export const PitchComponentWithPasses = () => {
         });
       }
       const layer = Rabona.layer({
-        type: "passLayer",
+        type: "ballMovement",
         data: passes,
         options: {
           color: "yellow",
@@ -170,16 +169,10 @@ export const PitchComponentWithPasses = () => {
       }).addTo(pitch);
     }
   }, []);
-  return (
-    <div
-      id="pitch2"
-      style={{ width: "750px", margin: "auto" }}
-    />
-  );
+  return <div id="pitch2" style={{ width: "750px", margin: "auto" }} />;
 };
 
 <PitchComponentWithPasses />
-
 
 ## Updating React Component
 
@@ -208,7 +201,7 @@ export const PitchComponentWithPasses = () => {
         });
       }
       const layer = Rabona.layer({
-        type: "passLayer",
+        type: "ballMovement",
         data: passes,
         options: {
           color: "yellow",
@@ -220,10 +213,113 @@ export const PitchComponentWithPasses = () => {
     }
   }, []);
   return (
-    <div
-      id="pitchWithPasses"
-      style={{ width: "750px", margin: "auto" }}
-    />
+    <div id="pitchWithPasses" style={{ width: "750px", margin: "auto" }} />
   );
 };
 ```
+
+## Adding Labels to the Passes
+
+We can add labels to the passes by adding **label** property to the data.
+First let's extend our mock data generator with labels.
+
+```js
+const passes = [];
+// highlight-start
+const randomNames = [
+  "Messi",
+  "Ronaldo",
+  "Neymar",
+  "Mbappe",
+  "Salah",
+  "Kane",
+  "Suarez",
+  "Benzema",
+  "Griezmann",
+  "Lewandowski",
+];
+// highlight-end
+for (let i = 0; i < 10; i++) {
+  passes.push({
+    startX: Math.floor(Math.random() * 120),
+    startY: Math.floor(Math.random() * 80),
+    endX: Math.floor(Math.random() * 120),
+    endY: Math.floor(Math.random() * 80),
+    // highlight-next-line
+    label: randomNames[Math.floor(Math.random() * randomNames.length)],
+  });
+}
+```
+
+rest of the code is the same as before. Only difference is that we changed the options layer
+to enlarge circle radius a bit.
+
+```js
+...
+const layer = Rabona.layer({
+  type: "ballMovement",
+  data: passes,
+  options: {
+    color: "yellow",
+    width: 2,
+    showArrows: true,
+    radius: 20,
+  },
+}).addTo(pitch);
+...
+```
+
+export const PitchComponentWithPassesAndLabels = () => {
+  const [pitch, setPitch] = useState(null);
+  const pitchOptions = {
+    scaler: 6, //constant to resize the pitch
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch3", pitchOptions);
+      setPitch(pitch);
+      const passes = [];
+      const randomNames = [
+        "Messi",
+        "Ronaldo",
+        "Neymar",
+        "Mbappe",
+        "Salah",
+        "Kane",
+        "Suarez",
+        "Benzema",
+        "Griezmann",
+        "Lewandowski",
+      ];
+      for (let i = 0; i < 10; i++) {
+        passes.push({
+          startX: Math.floor(Math.random() * 120),
+          startY: Math.floor(Math.random() * 80),
+          endX: Math.floor(Math.random() * 120),
+          endY: Math.floor(Math.random() * 80),
+          label: randomNames[Math.floor(Math.random() * randomNames.length)],
+        });
+      }
+      const layer = Rabona.layer({
+        type: "ballMovement",
+        data: passes,
+        options: {
+          color: "yellow",
+          width: 1.5,
+          showArrows: true,
+          radius: 15,
+        },
+      }).addTo(pitch);
+    }
+  }, []);
+  return <div id="pitch3" style={{ width: "750px", margin: "auto" }} />;
+};
+
+<PitchComponentWithPassesAndLabels />
+
+In the next tutorial we will plot the shots on the pitch with different styles for goals and misses.
