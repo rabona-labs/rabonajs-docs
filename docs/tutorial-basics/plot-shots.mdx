@@ -108,10 +108,101 @@ export const ShotsComponent = () => {
 
 <ShotsComponent/>
 
+
+
 ## Customizing the plot
 
-We can customize the plot by add custom styles for **ballMovement** layer.
-
-// TODO add getColor function
+What if you want you want to customize the plot? You can use the `getLineColor` and `getCircle` functions to customize the plot.
+This could be useful if you want to use different colors for goals and misses.
 
 ```jsx
+export const CustomShotsComponent = () => {
+  const [pitch, setPitch] = useState(null);
+  // generate random shot data
+  const shots = [];
+  for (let i = 0; i < 10; i++) {
+    shots.push({
+      startX: randomIntFromInterval(120,90),
+      startY: randomIntFromInterval(65,25),
+      endX: 120,
+      endY: randomIntFromInterval(45,35),
+      result: Math.random() > 0.5 ? "goal" : "miss",
+    });
+  }
+  const pitchOptions = {
+    scaler: 6, //constant to resize the pitch
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch", pitchOptions);
+      setPitch(pitch);
+      const layer = Rabona.layer({
+        type: "ballMovement",
+        data: shots,
+        options: {
+          width: 1.5,
+          showArrows: true,
+          radius: 3,
+          // highlight-start
+          getLineColor: (d) => (d.result === "goal" ? "green" : "red"),
+          getCircleColor: (d) => (d.result === "goal" ? "green" : "red"),
+          // highlight-end
+        },
+      }).addTo(pitch);
+    }
+  }, []);
+  return <div id="pitch2" style={{ width: "750px", margin: "auto" }} />;
+};
+
+<CustomShotsComponent/>
+```
+
+export const CustomShotsComponent = () => {
+  const [pitch, setPitch] = useState(null);
+  // generate random shot data
+  const shots = [];
+  for (let i = 0; i < 10; i++) {
+    shots.push({
+      startX: randomIntFromInterval(120,90),
+      startY: randomIntFromInterval(65,25),
+      endX: 120,
+      endY: randomIntFromInterval(45,35),
+      result: Math.random() > 0.5 ? "goal" : "miss",
+    });
+  }
+  const pitchOptions = {
+    scaler: 6, //constant to resize the pitch
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch2", pitchOptions);
+      setPitch(pitch);
+      const layer = Rabona.layer({
+        type: "ballMovement",
+        data: shots,
+        options: {
+          color: "yellow",
+          width: 1.5,
+          showArrows: false, //TODO: fix arrows
+          radius: 3,
+          //hi
+          getLineColor: (d) => (d.result === "goal" ? "green" : "red"),
+          getCircleColor: (d) => (d.result === "goal" ? "green" : "red"),
+        },
+      }).addTo(pitch);
+    }
+  }, []);
+  return <div id="pitch2" style={{ width: "750px", margin: "auto" }} />;
+};
+
+<CustomShotsComponent/>

@@ -21,7 +21,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: 'Tutorial First',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    Png: require('@site/static/img/rabona.png').default,
     description: (
       <>
         We provide a tutorial to get you started in soccer analytics as alongside the library.
