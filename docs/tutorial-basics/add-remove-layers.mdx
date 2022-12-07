@@ -189,6 +189,14 @@ If it is checked, we will create a layer and add it to the pitch. If it is not c
     //highlight-end
   };
 ```
+
+
+:::tip 
+
+It is important to the pass whole layer instance to the `removeLayer` function. If you pass a layer id, it will not work.
+
+:::
+
 ### Try it out ⚽️
 
 import { useState, useEffect } from "react";
@@ -260,3 +268,4 @@ export const PitchComponent = () => {
 };
 
 <PitchComponent />
+
