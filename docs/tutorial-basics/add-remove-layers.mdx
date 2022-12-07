@@ -1,0 +1,262 @@
+---
+sidebar_position: 3
+---
+
+# Add/Remove Layers
+
+In this tutorial, we will learn how to add and remove layers to the pitch.
+We will also learn how to create a layer toggler using RabonaJS and React.
+Simplest way to create a layer in RabonaJS is calling `Rabona.Layer()` function. There are three types of layers in RabonaJS:
+
+- `ballMovement` - for drawing passes, dribbles, shots, etc. It is a combination of line and circle layers.
+- `circle` - for drawing point-like data, shot positions, player positions, etc.
+- `line` - for drawing lines, player movements, etc. without a circle
+
+### Line Layer
+
+Line layer is used for drawing lines between two points. It can be used for drawing passes, shots etc.
+
+### Circle Layer
+
+Circle layer is used for drawing circles. It can be used for drawing player positions, shot positions, etc.
+
+### Ball Movement Layer
+
+Ball Movement layer is used for drawing passes, dribbles, shots, etc. It is a combination of line and circle layers.
+
+### Creating a Layer
+
+To create a layer, you need to call `Rabona.layer()` function. It takes an object as a parameter. This object has three properties:
+
+- `type` - type of the layer. It can be `line`, `circle` or `ballMovement`.
+- `data` - data for the layer. It can be an array of objects or a function that returns an array of objects.
+- `options` - options for the layer. It is an object that has different properties for different types of layers.
+
+```js
+const layer = Rabona.layer({
+  type: "ballMovement",
+  data: [pass],
+  options: {
+    color: "yellow",
+    width: 1.5,
+    showArrows: true,
+    radius: 3,
+  },
+});
+```
+
+### Adding a Layer
+
+There are two ways you can add a layer to the pitch. You can add it to the pitch when you create it or you can add it later.
+To add a layer to the pitch after creating it, you need to call `Pitch.addLayer()` function. It takes a layer as a parameter.
+Altenatively, you can add a layer just after creating by calling `Layer.addTo(pitch)` function.
+
+```js
+const pitch = Rabona.pitch("pitch", pitchOptions);
+const layer = Rabona.layer({
+  type: "ballMovement",
+  data: [pass],
+  options: {
+    color: "yellow",
+    width: 1.5,
+    showArrows: true,
+    radius: 3,
+  },
+});
+
+pitch.addLayer(layer);
+```
+
+or using `Layer.addTo(pitch)` function:
+
+```js
+const pitch = Rabona.pitch("pitch", pitchOptions);
+const layer = Rabona.layer({
+  type: "ballMovement",
+  data: [pass],
+  options: {
+    color: "yellow",
+    width: 1.5,
+    showArrows: true,
+    radius: 3,
+  },
+}).addTo(pitch);
+```
+
+### Removing a Layer
+
+To remove a layer from the pitch, you need to call `Pitch.removeLayer()` function. It takes a `Layer` object as a parameter.
+
+```js
+pitch.removeLayer(layer);
+```
+
+### Layer toggler
+
+Let's build a layer toggler using RabonaJS and React. We will create a layer toggler for a ball movement layer.
+We will create a button that will toggle the layer on and off.
+
+```jsx
+// First import libraries and create mock pass data
+import { useState, useEffect } from "react";
+import Rabona from "rabonajs";
+const passes = [];
+for (let i = 0; i < 10; i++) {
+  passes.push({
+    startX: Math.floor(Math.random() * 120),
+    startY: Math.floor(Math.random() * 80),
+    endX: Math.floor(Math.random() * 120),
+    endY: Math.floor(Math.random() * 80),
+  });
+}
+```
+
+A checkbox component that will toggle the layer
+```jsx title="ToggleCheckbox.jsx"
+export const ToggleCheckbox = ({ checked, onChange }) => {
+  return (
+    <label>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      Show passes
+    </label>
+  );
+};
+```
+
+Create a component that will render a pitch
+
+```jsx title="PitchComponent.jsx"
+export const PitchComponent = () => {
+  const [pitch, setPitch] = useState(null);
+  const [layer, setLayer] = useState(null);
+  const [showPasses, setShowPasses] = useState(false);
+  const pitchOptions = {
+    scaler: 6, //constant to resize the pitch
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch", pitchOptions);
+      setPitch(pitch);
+    }
+  }, []);
+  const onChange = (checked) => {
+    setShowPasses(checked);
+    // ... toggle layer here
+  };
+  return (
+    <>
+      <ToggleCheckbox checked={showPasses} onChange={onChange} />
+      <div id="pitch" style={{ width: "500px", margin: "auto" }} />
+    </>
+  );
+};
+
+<PitchComponent />
+```
+
+Inside onChange function we will check if the checkbox is checked or not. 
+If it is checked, we will create a layer and add it to the pitch. If it is not checked, we will remove the layer from the pitch.
+```js
+  const onChange = (checked) => {
+    //highlight-start
+    setShowPasses(checked);
+    if (checked) {
+      const layer = Rabona.layer({
+        type: "ballMovement",
+        data: passes,
+        options: {
+          color: "yellow",
+          width: 1.5,
+          showArrows: true,
+          radius: 3,
+        },
+      }).addTo(pitch);
+      // We are storing the layer object instance in the state so that we can use it later
+      setLayer(layer);
+    } else {
+      // Important thing here is to pass the layer object instance to the removeLayer function
+      pitch.removeLayer(layer);
+    }
+    //highlight-end
+  };
+```
+### Try it out ⚽️
+
+import { useState, useEffect } from "react";
+import Rabona from "rabonajs";
+const passes = [];
+for (let i = 0; i < 10; i++) {
+  passes.push({
+    startX: Math.floor(Math.random() * 120),
+    startY: Math.floor(Math.random() * 80),
+    endX: Math.floor(Math.random() * 120),
+    endY: Math.floor(Math.random() * 80),
+  });
+}
+export const ToggleCheckbox = ({ checked, onChange }) => {
+  return (
+    <label>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      Show passes
+    </label>
+  );
+};
+
+export const PitchComponent = () => {
+  const [pitch, setPitch] = useState(null);
+  const [layer, setLayer] = useState(null);
+  const [showPasses, setShowPasses] = useState(false);
+  const pitchOptions = {
+    scaler: 6, //constant to resize the pitch
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch", pitchOptions);
+      setPitch(pitch);
+    }
+  }, []);
+  const onChange = (checked) => {
+    setShowPasses(checked);
+    if (checked) {
+      const layer = Rabona.layer({
+        type: "ballMovement",
+        data: passes,
+        options: {
+          color: "yellow",
+          width: 1.5,
+          showArrows: true,
+          radius: 3,
+        },
+      }).addTo(pitch);
+      setLayer(layer);
+    } else {
+      pitch.removeLayer(layer);
+    }
+  };
+  return (
+    <>
+      <ToggleCheckbox checked={showPasses} onChange={onChange} />
+      <div id="pitch" style={{ width: "500px", margin: "auto" }} />
+    </>
+  );
+};
+
+<PitchComponent />
