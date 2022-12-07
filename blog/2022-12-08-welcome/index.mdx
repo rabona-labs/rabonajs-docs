@@ -1,0 +1,82 @@
+---
+slug: welcome
+title: Welcome
+authors: [orabazu]
+tags: [rabonajs, hello, soccer, football]
+---
+
+Today, we are excited to announce the first alpha release of RabonaJS, a lightweight JavaScript library for plotting soccer events
+
+RabonaJS provides a simple and intuitive syntax for plotting soccer/football events as layers on top of a soccer field. Powered by D3.js, it is designed to be easy to use and to integrate with js notebooks such as Observable.
+
+```js
+import Rabona from "rabonajs";
+
+const pitchOptions = {
+  scaler: 6, //constant to resize the pitch
+  height: 80, //px
+  width: 120, //px
+  padding: 100, //px
+  linecolour: "#ffffff",
+  fillcolour: "#7ec850",
+};
+
+// initialize the pitch on the "pitch" div with a given options
+const pitch = Rabona.pitch("pitch", pitchOptions);
+```
+
+```html
+<div id="pitch"></div>
+```
+
+Simple as is.
+
+In this first alpha release, we have implemented the core functionality of RabonaJS, including the `Pitch`, `Layer` methods.
+
+We are excited to continue developing RabonaJS and adding new features and functionality in the future. We encourage you to try out the library and give us feedback on what you like and what you would like to see improved.
+
+To get started with RabonaJS, you can visit the GitHub repository at https://github.com/orabazu/rabonajs. The documentation and examples will help you learn how to use the library in your own projects or notebooks.
+
+We look forward to hearing your feedback and seeing what you build with RabonaJS!
+
+import { useState, useEffect } from "react";
+import Rabona from "rabonajs";
+export const PitchComponentWithPasses = () => {
+  const [pitch, setPitch] = useState(null);
+  const pitchOptions = {
+    scaler: 6, //constant to resize the pitch
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch2", pitchOptions);
+      setPitch(pitch);
+      const passes = [];
+      for (let i = 0; i < 10; i++) {
+        passes.push({
+          startX: Math.floor(Math.random() * 120),
+          startY: Math.floor(Math.random() * 80),
+          endX: Math.floor(Math.random() * 120),
+          endY: Math.floor(Math.random() * 80),
+        });
+      }
+      const layer = Rabona.layer({
+        type: "ballMovement",
+        data: passes,
+        options: {
+          color: "yellow",
+          width: 1.5,
+          showArrows: true,
+          radius: 3,
+        },
+      }).addTo(pitch);
+    }
+  }, []);
+  return <div id="pitch2" style={{ width: "500px", margin: "auto" }} />;
+};
+
+<PitchComponentWithPasses />
