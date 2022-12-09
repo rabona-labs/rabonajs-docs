@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkrabonjs_docs=self.webpackChunkrabonjs_docs||[]).push([[63],{6035:s=>{s.exports=JSON.parse('{"label":"soccer","permalink":"/rabonajs-docs/blog/tags/soccer","allTagsPath":"/rabonajs-docs/blog/tags","count":1}')}}]);
