@@ -8,16 +8,17 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 const config = {
   title: 'RabonaJS',
   tagline: 'Plot soccer/football pitch & events with JS',
-  url: 'https://your-docusaurus-test-site.com',
-  baseUrl: '/',
+  url: 'https://orabazu.github.io/rabonajs-docs/',
+  baseUrl: '/rabonajs-docs/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'rabonajs', // Usually your GitHub org/user name.
-  projectName: 'docusaurus', // Usually your repo name.
+  organizationName: 'orabazu', // Usually your GitHub org/user name.
+  projectName: 'rabonajs', // Usually your repo name.
+  trailingSlash: false,
 
   // Even if you don't use internalization, you can use this field to set useful
   // metadata like html lang. For example, if your site is Chinese, you may want
@@ -59,7 +60,7 @@ const config = {
       navbar: {
         title: 'RabonaJS',
         logo: {
-          alt: 'My Site Logo',
+          alt: 'RabonaJS Logo',
           src: 'img/logo.png',
         },
         items: [
