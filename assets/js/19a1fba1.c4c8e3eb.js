@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkrabonjs_docs=self.webpackChunkrabonjs_docs||[]).push([[240],{8819:s=>{s.exports=JSON.parse('{"label":"soccer","permalink":"/blog/tags/soccer","allTagsPath":"/blog/tags","count":1}')}}]);
