@@ -8,8 +8,8 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 const config = {
   title: 'RabonaJS',
   tagline: 'Plot soccer/football pitch & events with JS',
-  url: 'https://orabazu.github.io/rabonajs-docs/',
-  baseUrl: '/',
+  url: 'https://orabazu.github.io/rabonajs-docs',
+  baseUrl: '/rabonajs-docs/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
