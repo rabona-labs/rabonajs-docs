@@ -24,7 +24,7 @@ const FeatureList: FeatureItem[] = [
     Png: require('@site/static/img/rabona.png').default,
     description: (
       <>
-        We provide a tutorial to get you started in soccer analytics alongside with the library.
+        Tutorial series to get you started in soccer analytics alongside with the library.
       </>
     ),
   },
