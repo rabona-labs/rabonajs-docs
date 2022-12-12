@@ -15,7 +15,6 @@ The central class of the API is Rabona. It is used to create a pitch.
 import Rabona from "rabonajs";
 
 const pitchOptions = {
-  scaler: 6, //constant to resize the pitch
   height: 80, //px
   width: 120, //px
   padding: 100, //px
@@ -48,7 +47,6 @@ export const PitchComponent = () => {
   const pitchRef = useRef(null);
 
   const pitchOptions = {
-    scaler: 6, //constant to resize the pitch
     height: 80, //in px
     width: 120, //in px
     padding: 100, // in px, distance between the pitch border lines and external border
@@ -76,7 +74,6 @@ export const PitchComponent = () => {
   const [pitch, setPitch] = useState(null);
   const pitchRef = useRef(null);
   const pitchOptions = {
-    scaler: 6, //constant to resize the pitch
     height: 80, //px
     width: 120, //px
     padding: 100, //px
