@@ -1,0 +1,169 @@
+---
+sidebar_position: 1
+---
+
+# Creating a pass network using DanfoJS and RabonaJS
+
+In this tutorial, we will learn how to create a pass network using DanfoJS and RabonaJS.
+ We will be using the [StatsBomb open dataset](https://github.com/statsbomb/open-data) for this tutorial.
+
+## Introduction
+
+A pass network is a graph that shows the passing relationships between players in a football match. 
+It is a useful tool for analyzing the passing patterns of a team and the players involved in the passing sequences.
+It can also be used to identify the players who are most involved in the passing sequences.
+
+## Prerequisites
+
+Even though we are going to explain the code in detail, 
+it could be nice to have a look at the [Danfo documentation](https://danfo.jsdata.org/). It is the replacement of 
+pandas in JS ecosystem with a similar syntax. 
+
+## Getting started
+
+We will be using the [StatsBomb open dataset](https://github.com/statsbomb/open-data/blob/master/data/matches/2/44.json) for this tutorial. 
+The dataset we are going to use contains data for all the matches played by Arsenal in the famouse 2003-2004 season.
+The invincible season in which Arsenal won the Premier League without losing a single match.
+
+First we will import the required libraries and draw an empty pitch using RabonaJS.
+
+```jsx
+import Rabona from "rabonajs";
+import { useEffect, useRef, useState } from "react";
+
+export const ShotsComponent = () => {
+  const [pitch, setPitch] = useState(null);
+
+  const pitchOptions = {
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch", pitchOptions);
+      setPitch(pitch);
+    }
+  }, []);
+  return <div id="pitch" style={{ width: "750px", margin: "auto" }} />;
+};
+
+```
+
+
+import Rabona from "rabonajs";
+import { useEffect, useRef, useState } from "react";
+
+export const PassNetworks = () => {
+  const [pitch, setPitch] = useState(null);
+  // generate random shot data
+  const pitchOptions = {
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch", pitchOptions);
+      setPitch(pitch);
+    }
+  }, []);
+  return <div id="pitch" style={{ width: "750px", margin: "auto" }} />;
+};
+
+<PassNetworks/>
+
+## Loading the data
+
+Let's create a dropdown menu to select the match we want to analyze. 
+
+```jsx
+
+export const MatchSelector = ({ onChange }) => {
+  const [matches, setMatches] = useState([]); 
+  /*
+  Here we are fetching the data from github. Any provided competitionId and seasonId will work.
+  */
+  const getData = async () => {
+    const competitionId = 2; // premier league
+    const seasonId = 44; // 2003-2004 season
+    const matchesResponse = await fetch(
+      'https://raw.githubusercontent.com/statsbomb/open-data/master/data/matches/' +
+        competitionId +
+        '/' +
+        seasonId +
+        '.json',
+    );
+    const matches = await matchesResponse.json();
+    setMatches(matches);
+  };
+
+  /*
+    Load the data once the component is mounted
+  */
+  useEffect(() => {
+    getData();
+  }, []);
+
+
+  /*
+    Render the dropdown menu
+  */
+  return (
+    <div>
+      <select onChange={onChange}>
+        {matches.map((match) => (
+          <option key={match.match_id} value={match.match_id}>
+            {match.home_team.home_team_name} {match.home_score} - {match.away_score} {match.away_team.away_team_name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+```
+
+### MatchSelector Component
+
+using `onChange` function we can get the selected match id to retrieve the data for that match.\
+That will just the log the match id for now.
+
+export const MatchSelector = ({ onChange }) => {
+  const [matches, setMatches] = useState([]); 
+  // fetch data from github 
+  const getData = async () => {
+    const competitionId = 2; // premier league
+    const seasonId = 44; // 2003-2004 season
+    const matchesResponse = await fetch(
+      'https://raw.githubusercontent.com/statsbomb/open-data/master/data/matches/' +
+        competitionId +
+        '/' +
+        seasonId +
+        '.json',
+    );
+    const matches = await matchesResponse.json();
+    setMatches(matches);
+  };
+  useEffect(() => {
+    getData();
+  }, []);
+  // render the dropdown menu
+  return (
+    <div>
+      <select onChange={onChange}>
+        {matches.map((match) => (
+          <option key={match.match_id} value={match.match_id}>
+            {match.home_team.home_team_name} {match.home_score} - {match.away_score} {match.away_team.away_team_name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+<MatchSelector onChange={(e) => console.log(e.target.value)} />

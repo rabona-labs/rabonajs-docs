@@ -1,0 +1,8 @@
+{
+  "label": "Tutorial - Advanced",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Some more advanced tutorials including football analytics concepts and real sports data."
+  }
+}
