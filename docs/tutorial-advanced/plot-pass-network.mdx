@@ -106,12 +106,16 @@ export const MatchSelector = ({ onChange }) => {
     getData();
   }, []);
 
+  const onMatchChange = (e) => {
+    onChange(matches.find((match) => match.match_id === e.target.value));
+  };
+
   /*
     Render the dropdown menu
   */
   return (
     <div>
-      <select onChange={onChange}>
+      <select onChange={onMatchChange}>
         {matches.map((match) => (
           <option key={match.match_id} value={match.match_id}>
             {match.home_team.home_team_name} {match.home_score} -{" "}
@@ -145,13 +149,16 @@ export const MatchSelector = ({ onChange }) => {
     const matches = await matchesResponse.json();
     setMatches(matches);
   };
+  const onMatchChange = (e) => {
+    onChange(matches.find((match) => match.match_id == e));
+  };
   useEffect(() => {
     getData();
   }, []);
   // render the dropdown menu
   return (
     <div>
-      <select onChange={onChange}>
+      <select onChange={(e) => onMatchChange(e.target.value)}>
         {matches.map((match) => (
           <option key={match.match_id} value={match.match_id}>
             {match.home_team.home_team_name} {match.home_score} -{" "}
@@ -194,69 +201,69 @@ import { DataFrame, merge, toJSON } from "danfojs/dist/danfojs-browser/src";
 First we are fetching the match data from github using the match id.
 
 ```js
-  const matchResponse = await fetch(
-    'https://raw.githubusercontent.com/statsbomb/open-data/master/data/events/' +
-      matchId +
-      '.json',
-  );
-  const match = await matchResponse.json();
+const matchResponse = await fetch(
+  "https://raw.githubusercontent.com/statsbomb/open-data/master/data/events/" +
+    matchId +
+    ".json"
+);
+const match = await matchResponse.json();
 ```
 
 Then we are looping through the events and filtering out the passes and storing them in an array.
-  
-  ```js
-    const passes = []
-    for(let i=0; i<match.length; i++){
-      const event = match[i]
-      if(event.type.name === 'Substitution'){
-        break;
-      }
-      if(match[i].type.name === 'Pass'){
-        passes.push({
-          startX: event.location[0],
-          startY: event.location[1],
-          endX: event.pass.end_location[0],
-          endY: event.pass.end_location[1],
-          teamId: event.team.id,
-          passer: event.player?.id,
-          passerName: event.player?.name,
-          recipient: event.pass.recipient?.id
-        })
-      }
-    }
-  ```
+We should make sure that event is a pass and it has a recipient. This way unsuccesful passes are not included.
+
+```js
+const passes = [];
+for (let i = 0; i < match.length; i++) {
+  const event = match[i];
+  if (event.type.name === "Substitution") {
+    break;
+  }
+  if (match[i].type.name === "Pass" && event.pass.recipient) {
+    passes.push({
+      startX: event.location[0],
+      startY: event.location[1],
+      endX: event.pass.end_location[0],
+      endY: event.pass.end_location[1],
+      teamId: event.team.id,
+      passer: event.player?.id,
+      passerName: event.player?.name,
+      recipient: event.pass.recipient?.id,
+    });
+  }
+}
+```
 
 ### Creating the pass network
 
-
 Below we are creating a DataFrame from the passes array and grouping the passes by the passer and team id.
 Afterwards calculating the average position of the passer and the number of passes made by the passer.
-  
-  ```js
-    const df = new DataFrame(passes);
-    const avereagePositions = df
-            .groupby(['passer', 'teamId'])
-            .agg({ startX: 'mean', startY: ['mean', 'count'] })
-            .rename({ startY_count: 'pass_count' });
-  ```
+
+```js
+const df = new DataFrame(passes);
+const avereagePositions = df
+  .groupby(["passer", "teamId"])
+  .agg({ startX: "mean", startY: ["mean", "count"] })
+  .rename({ startY_count: "pass_count" });
+```
 
 Whole function looks like this
 
 ```jsx
 export const getPassNetworkData = async (matchId) => {
   const matchResponse = await fetch(
-    'https://raw.githubusercontent.com/statsbomb/open-data/master/data/events/' +
+    "https://raw.githubusercontent.com/statsbomb/open-data/master/data/events/" +
       matchId +
-      '.json',
+      ".json"
   );
   const match = await matchResponse.json();
-  const passes = []
-  for(let i=0; i<match.length; i++){
-    const event = match[i]
-    if(event.type.name === 'Substitution'){
+  const passes = [];
+  for (let i = 0; i < match.length; i++) {
+    const event = match[i];
+    if (event.type.name === "Substitution") {
       break;
     }
-    if(match[i].type.name === 'Pass'){
+    if (match[i].type.name === "Pass") {
       passes.push({
         startX: event.location[0],
         startY: event.location[1],
@@ -265,22 +272,22 @@ export const getPassNetworkData = async (matchId) => {
         teamId: event.team.id,
         passer: event.player?.id,
         passerName: event.player?.name,
-        recipient: event.pass.recipient?.id
-      })
+        recipient: event.pass.recipient?.id,
+      });
     }
   }
   const df = new DataFrame(passes);
   const avereagePositions = df
-          .groupby(['passer', 'teamId'])
-          .agg({ startX: 'mean', startY: ['mean', 'count'] })
-          .rename({ startY_count: 'pass_count' });
+    .groupby(["passer", "teamId"])
+    .agg({ startX: "mean", startY: ["mean", "count"] })
+    .rename({ startY_count: "pass_count" });
 };
 ```
 
-This function returns a DataFrame with the average position of the passer and 
+This function returns a DataFrame with the average position of the passer and
 the number of passes made by the passer. We will use this DataFrame to create the nodes of the graph.
 
-This data would look like this 
+This data would look like this
 
 ```js
 {
@@ -292,16 +299,16 @@ This data would look like this
 }
 ```
 
-At the next stage we will filter out the passes between each player. 
-We will do this by grouping the passes by the passer and the recipient. Passer's name 
+At the next stage we will filter out the passes between each player.
+We will do this by grouping the passes by the passer and the recipient. Passer's name
 is also added to the DataFrame. We will use these information to visualize the nodes of the graph.
 
 ```js
-    const passBetween = df
-      .groupby(['passer', 'recipient', 'passerName', 'passerNumber'])
-      .agg({ startY: ['count'] })
-      .rename({ startY_count: 'count' })
-      .rename({ passerName: 'label' });
+const passBetween = df
+  .groupby(["passer", "recipient", "passerName", "passerNumber"])
+  .agg({ startY: ["count"] })
+  .rename({ startY_count: "count" })
+  .rename({ passerName: "label" });
 ```
 
 This data would look like this
@@ -323,16 +330,15 @@ This data would look like this
 },
 ```
 
-All we need to do is merging these two datasets  by using the `merge` method we imported early on.
+All we need to do is merging these two datasets by using the `merge` method we imported early on.
 
 ```js
-    const merged = merge({
-      left: passBetween,
-      right: avereagePositions,
-      on: ['passer'],
-      how: 'left',
-    });
-
+const passData = merge({
+  left: passBetween,
+  right: avereagePositions,
+  on: ["passer"],
+  how: "left",
+});
 ```
 
 This will give us a DataFrame with most of the information we need to create the nodes and edges of the graph.
@@ -356,40 +362,105 @@ This will give us a DataFrame with most of the information we need to create the
     ...
 ```
 
-`pass_count` is the number of passes made by the passer and `count` 
+`pass_count` is the total number of passes made by the passer and `count`
 is the number of passes made between the passer and the recipient.
 We still need to create recipient's average position and we will use it to create the edges of the graph.
 A simple `map` function will do the trick after converting the DataFrame to JSON.
-Mapping function will find the recipient's average position from the `avereagePositions` 
- and add it to the `mergedJson`. That will correspond the end locations of the passes.
+Mapping function will find the recipient's average position from the `avereagePositions`
+and add it to the `passNetwork`. That will correspond the end locations of the passes.
 
 ```js
-    let mergedJson = toJSON(merged);
-    const averagePositionsJSON = toJSON(avereagePositions)
-
-    mergedJson = mergedJson.map((j) => ({
-      endX: averagePositionsJSON.find((a) => j.recipient === a.passer).startX_mean,
-      endY: averagePositionsJSON.find((a) => j.recipient === a.passer).startY_mean,
-      startX: j.startX_mean,
-      startY: j.startY_mean,
-      ...j,
-    }));
+const passDataJson = toJSON(passData);
+const averagePositionsJson = toJSON(avereagePositions);
+const passNetwork = passDataJson.map((pass) => ({
+  endX: averagePositionsJson.find(
+    (position) => pass.recipient === position.passer
+  ).startX_mean,
+  endY: averagePositionsJson.find(
+    (position) => pass.recipient === position.passer
+  ).startY_mean,
+  startX: pass.startX_mean,
+  startY: pass.startY_mean,
+  ...pass,
+}));
 ```
+
+### Home and away selector component
+
+We will create a selector to select the home and away team. We can use a simple radio button for this.
+
+```jsx
+const HomeAwaySelector = ({ homeAway, setActiveTeamId }) => {
+  return (
+    <div>
+      <label>
+        <input
+          type="radio"
+          name="home-away"
+          value={homeAway.home}
+          checked={homeAway === "home"}
+          onChange={(e) => setActiveTeamId(e.target.value)}
+        />
+        Home
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="home-away"
+          value={homeAway.away}
+          checked={homeAway === "away"}
+          onChange={(e) => setActiveTeamId(e.target.value)}
+        />
+        Away
+      </label>
+    </div>
+  );
+};
+```
+
+export const HomeAwaySelector = ({ homeAway, setActiveTeamId, activeTeamId }) => {
+  return (
+    homeAway && 
+    (<div>
+      <label>
+        <input
+          type="radio"
+          name="home-away"
+          value={homeAway.home}
+          checked={homeAway.home == activeTeamId}
+          onChange={(e) => setActiveTeamId(e.target.value)}
+        />
+        Home
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="home-away"
+          value={homeAway.away}
+          checked={homeAway.away == activeTeamId}
+          onChange={(e) => setActiveTeamId(e.target.value)}
+        />
+        Away
+      </label>
+    </div>)
+  );
+};
 
 export const getPassNetworkData = async (matchId) => {
   const matchResponse = await fetch(
-    'https://raw.githubusercontent.com/statsbomb/open-data/master/data/events/' +
+    "https://raw.githubusercontent.com/statsbomb/open-data/master/data/events/" +
       matchId +
-      '.json',
+      ".json"
   );
   const match = await matchResponse.json();
-  const passes = []
-  for(let i=0; i<match.length; i++){
-    const event = match[i]
-    if(event.type.name === 'Substitution'){
+  console.log("match", match);
+  const passes = [];
+  for (let i = 0; i < match.length; i++) {
+    const event = match[i];
+    if (event.type.name === "Substitution") {
       break;
     }
-    if(match[i].type.name === 'Pass'){
+    if (match[i].type.name === "Pass" && event.pass.recipient) {
       passes.push({
         startX: event.location[0],
         startY: event.location[1],
@@ -398,37 +469,47 @@ export const getPassNetworkData = async (matchId) => {
         teamId: event.team.id,
         passer: event.player?.id,
         passerName: event.player?.name,
-        recipient: event.pass.recipient?.id
-      })
+        recipient: event.pass.recipient?.id,
+      });
     }
   }
   const df = new DataFrame(passes);
   const avereagePositions = df
-          .groupby(['passer', 'teamId'])
-          .agg({ startX: 'mean', startY: ['mean', 'count'] })
-          .rename({ startY_count: 'pass_count' });
+    .groupby(["passer", "teamId"])
+    .agg({ startX: "mean", startY: ["mean", "count"] })
+    .rename({ startX_mean: "startX", startY_mean: "startY" })
+    .rename({ startY_count: "pass_count" });
   const passBetween = df
-      .groupby(['passer', 'recipient', 'passerName'])
-      .agg({ startY: ['count'] })
-      .rename({ startY_count: 'count' })
-      .rename({ passerName: 'label' });
-    const merged = merge({
-      left: passBetween,
-      right: avereagePositions,
-      on: ['passer'],
-      how: 'left',
-    });
-  let mergedJson = toJSON(merged);
-  let averagePositionsJSON = toJSON(avereagePositions)
-  console.log(mergedJson)
-  console.log(averagePositionsJSON)
-  mergedJson.forEach(function(j) {
-    console.log(averagePositionsJSON.find((a) => a.passer === j.recipient)?.startX_mean)
-});  
+    .groupby(["passer", "recipient", "passerName"])
+    .agg({ startY: ["count"] })
+    .rename({ startY_count: "count" })
+    .rename({ passerName: "label" });
+  const passData = merge({
+    left: passBetween,
+    right: avereagePositions,
+    on: ["passer"],
+    how: "left",
+  });
+  let passDataJson = toJSON(passData);
+  let averagePositionsJson = toJSON(avereagePositions);
+  const passNetwork = passDataJson.map((pass) => ({
+    endX: averagePositionsJson.find(
+      (position) => pass.recipient === position.passer
+    ).startX,
+    endY: averagePositionsJson.find(
+      (position) => pass.recipient === position.passer
+    ).startY,
+    startX: pass.startX,
+    startY: pass.startY,
+    ...pass,
+  }));
+  return passNetwork;
 };
 
 export const PassNetwork = () => {
   const [pitch, setPitch] = useState(null);
+  const [homeAway, setHomeAway] = useState(null);
+  const [activeTeamId, setActiveTeamId] = useState(null);
   // generate random shot data
   const pitchOptions = {
     height: 80, //in px
@@ -443,8 +524,40 @@ export const PassNetwork = () => {
       setPitch(pitch);
     }
   }, []);
-  return <div id="pitch2" style={{ width: "750px", margin: "auto" }} />;
+  const onMatchChange = async (match) => {
+    console.log({
+      home: match.home_team.home_team_id,
+      away: match.away_team.away_team_id,
+    })
+    setHomeAway({
+      home: match.home_team.home_team_id,
+      away: match.away_team.away_team_id,
+    });
+    setActiveTeamId(match.home_team.home_team_id);
+    const passNetwork = await getPassNetworkData(match.match_id);
+    passNetwork
+      .filter((pass) => pass.teamId == match.home_team.home_team_id)
+      .forEach((pass) => {
+        const layer = Rabona.layer({
+          type: "ballMovement",
+          data: [pass],
+          options: {
+            color: "yellow",
+          },
+        }).addTo(pitch);
+      });
+  };
+  const onActiveTeamChange = (teamId) => {
+    console.log("teamId", teamId);
+    setActiveTeamId(teamId);
+  };
+  return (
+    <>
+      <MatchSelector onChange={onMatchChange} />
+      <HomeAwaySelector homeAway={homeAway} setActiveTeamId={onActiveTeamChange} value={activeTeamId}/>
+      <div id="pitch2" style={{ width: "750px", margin: "auto" }} />
+    </>
+  );
 };
 
-<MatchSelector onChange={(e) => getPassNetworkData(e.target.value)} />
 <PassNetwork />
