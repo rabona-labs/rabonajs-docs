@@ -189,51 +189,191 @@ Here we are only importing necessary methods to reduce bundle size on browser
 
 import { DataFrame, merge, toJSON } from "danfojs/dist/danfojs-browser/src";
 
-Now we will create a function to get the pass network data for a given match id.
+### Fetch the match data
 
-```jsx
-const getPassNetworkData = async (matchId) => {
+First we are fetching the match data from github using the match id.
+
+```js
   const matchResponse = await fetch(
-    "https://raw.githubusercontent.com/statsbomb/open-data/master/data/events/" +
+    'https://raw.githubusercontent.com/statsbomb/open-data/master/data/events/' +
       matchId +
-      ".json"
+      '.json',
   );
   const match = await matchResponse.json();
+```
 
-  const df = new DataFrame(match);
-  // Get the first substitution event
-  const substitution = df
-    .filter((row) => row.type.name === "Substitution")
-    .head(1);
+Then we are looping through the events and filtering out the passes and storing them in an array.
+  
+  ```js
+    const passes = []
+    for(let i=0; i<match.length; i++){
+      const event = match[i]
+      if(event.type.name === 'Substitution'){
+        break;
+      }
+      if(match[i].type.name === 'Pass'){
+        passes.push({
+          startX: event.location[0],
+          startY: event.location[1],
+          endX: event.pass.end_location[0],
+          endY: event.pass.end_location[1],
+          teamId: event.team.id,
+          passer: event.player?.id,
+          passerName: event.player?.name,
+          recipient: event.pass.recipient?.id
+        })
+      }
+    }
+  ```
 
-  // Get the timestamp of the first substitution
-  const substitutionTimestamp = substitution.get("timestamp").values[0];
+### Creating the pass network
 
-  // Select only pass events that occur before the first substitution
-  const passes = df.filter(
-    (row) => row.type.name === "Pass" && row.timestamp < substitutionTimestamp
+
+Below we are creating a DataFrame from the passes array and grouping the passes by the passer and team id.
+Afterwards calculating the average position of the passer and the number of passes made by the passer.
+  
+  ```js
+    const df = new DataFrame(passes);
+    const avereagePositions = df
+            .groupby(['passer', 'teamId'])
+            .agg({ startX: 'mean', startY: ['mean', 'count'] })
+            .rename({ startY_count: 'pass_count' });
+  ```
+
+Whole function looks like this
+
+```jsx
+export const getPassNetworkData = async (matchId) => {
+  const matchResponse = await fetch(
+    'https://raw.githubusercontent.com/statsbomb/open-data/master/data/events/' +
+      matchId +
+      '.json',
   );
-
-  // Count the number of pass events
-  console.log(passes);
-
-  // const passes = match.filter((event) => event.type.name === 'Pass');
-  // const passData = passes.map((pass) => {
-  //   return {
-  //     from: pass.player.name,
-  //     to: pass.pass.recipient.name,
-  //     x: pass.location[0],
-  //     y: pass.location[1],
-  //   };
-  // });
-  // const passDataFrame = new DataFrame(passData);
-  // const passNetworkData = passDataFrame
-  //   .groupby(['from', 'to'])
-  //   .agg({ x: 'mean', y: 'mean', from: 'count' })
-  //   .rename({ from: 'weight' })
-  //   .reset_index();
-  // return passNetworkData;
+  const match = await matchResponse.json();
+  const passes = []
+  for(let i=0; i<match.length; i++){
+    const event = match[i]
+    if(event.type.name === 'Substitution'){
+      break;
+    }
+    if(match[i].type.name === 'Pass'){
+      passes.push({
+        startX: event.location[0],
+        startY: event.location[1],
+        endX: event.pass.end_location[0],
+        endY: event.pass.end_location[1],
+        teamId: event.team.id,
+        passer: event.player?.id,
+        passerName: event.player?.name,
+        recipient: event.pass.recipient?.id
+      })
+    }
+  }
+  const df = new DataFrame(passes);
+  const avereagePositions = df
+          .groupby(['passer', 'teamId'])
+          .agg({ startX: 'mean', startY: ['mean', 'count'] })
+          .rename({ startY_count: 'pass_count' });
 };
+```
+
+This function returns a DataFrame with the average position of the passer and 
+the number of passes made by the passer. We will use this DataFrame to create the nodes of the graph.
+
+This data would look like this 
+
+```js
+{
+    "passer": 12529,
+    "teamId": 1,
+    "startX_mean": 49.91,
+    "startY_mean": 8.515,
+    "pass_count": 20
+}
+```
+
+At the next stage we will filter out the passes between each player. 
+We will do this by grouping the passes by the passer and the recipient. Passer's name 
+is also added to the DataFrame. We will use these information to visualize the nodes of the graph.
+
+```js
+    const passBetween = df
+      .groupby(['passer', 'recipient', 'passerName', 'passerNumber'])
+      .agg({ startY: ['count'] })
+      .rename({ startY_count: 'count' })
+      .rename({ passerName: 'label' });
+```
+
+This data would look like this
+
+```js
+{
+    "passer": 12529,
+    "recipient": 40221,
+    "label": "J. Henderson",
+    "passerNumber": 14,
+    "count": 9
+},
+{
+    "passer": 12529,
+    "recipient": 1347,
+    "label": "J. Henderson",
+    "passerNumber": 14,
+    "count": 17
+},
+```
+
+All we need to do is merging these two datasets  by using the `merge` method we imported early on.
+
+```js
+    const merged = merge({
+      left: passBetween,
+      right: avereagePositions,
+      on: ['passer'],
+      how: 'left',
+    });
+
+```
+
+This will give us a DataFrame with most of the information we need to create the nodes and edges of the graph.
+
+```js
+{
+    "passer": 12529,
+    "recipient": 40221,
+    "label": "J. Henderson",
+    "passerNumber": 14,
+    "count": 9,
+    "teamId": 1,
+    "startX_mean": 49.91,
+    "startY_mean": 8.515,
+    "pass_count": 20
+},
+{
+    "passer": 12529,
+    "recipient": 1347,
+    "label": "J. Henderson
+    ...
+```
+
+`pass_count` is the number of passes made by the passer and `count` 
+is the number of passes made between the passer and the recipient.
+We still need to create recipient's average position and we will use it to create the edges of the graph.
+A simple `map` function will do the trick after converting the DataFrame to JSON.
+Mapping function will find the recipient's average position from the `avereagePositions` 
+ and add it to the `mergedJson`. That will correspond the end locations of the passes.
+
+```js
+    let mergedJson = toJSON(merged);
+    const averagePositionsJSON = toJSON(avereagePositions)
+
+    mergedJson = mergedJson.map((j) => ({
+      endX: averagePositionsJSON.find((a) => j.recipient === a.passer).startX_mean,
+      endY: averagePositionsJSON.find((a) => j.recipient === a.passer).startY_mean,
+      startX: j.startX_mean,
+      startY: j.startY_mean,
+      ...j,
+    }));
 ```
 
 export const getPassNetworkData = async (matchId) => {
@@ -262,13 +402,29 @@ export const getPassNetworkData = async (matchId) => {
       })
     }
   }
-  console.log(passes)
   const df = new DataFrame(passes);
   const avereagePositions = df
           .groupby(['passer', 'teamId'])
           .agg({ startX: 'mean', startY: ['mean', 'count'] })
           .rename({ startY_count: 'pass_count' });
-  console.log(avereagePositions);
+  const passBetween = df
+      .groupby(['passer', 'recipient', 'passerName'])
+      .agg({ startY: ['count'] })
+      .rename({ startY_count: 'count' })
+      .rename({ passerName: 'label' });
+    const merged = merge({
+      left: passBetween,
+      right: avereagePositions,
+      on: ['passer'],
+      how: 'left',
+    });
+  let mergedJson = toJSON(merged);
+  let averagePositionsJSON = toJSON(avereagePositions)
+  console.log(mergedJson)
+  console.log(averagePositionsJSON)
+  mergedJson.forEach(function(j) {
+    console.log(averagePositionsJSON.find((a) => a.passer === j.recipient)?.startX_mean)
+});  
 };
 
 export const PassNetwork = () => {
