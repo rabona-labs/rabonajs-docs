@@ -390,38 +390,9 @@ const passNetwork = passDataJson.map((pass) => ({
 We will create a selector to select the home and away team. We can use a simple radio button for this.
 
 ```jsx
-const HomeAwaySelector = ({ homeAway, setActiveTeamId }) => {
+const HomeAwaySelector = ({ homeAway, setActiveTeamId, activeTeamId }) => {
   return (
     <div>
-      <label>
-        <input
-          type="radio"
-          name="home-away"
-          value={homeAway.home}
-          checked={homeAway === "home"}
-          onChange={(e) => setActiveTeamId(e.target.value)}
-        />
-        Home
-      </label>
-      <label>
-        <input
-          type="radio"
-          name="home-away"
-          value={homeAway.away}
-          checked={homeAway === "away"}
-          onChange={(e) => setActiveTeamId(e.target.value)}
-        />
-        Away
-      </label>
-    </div>
-  );
-};
-```
-
-export const HomeAwaySelector = ({ homeAway, setActiveTeamId, activeTeamId }) => {
-  return (
-    homeAway && 
-    (<div>
       <label>
         <input
           type="radio"
@@ -442,7 +413,41 @@ export const HomeAwaySelector = ({ homeAway, setActiveTeamId, activeTeamId }) =>
         />
         Away
       </label>
-    </div>)
+    </div>
+  );
+};
+```
+
+export const HomeAwaySelector = ({
+  homeAway,
+  setActiveTeamId,
+  activeTeamId,
+}) => {
+  return (
+    homeAway && (
+      <div>
+        <label>
+          <input
+            type="radio"
+            name="home-away"
+            value={homeAway.home}
+            checked={homeAway.home == activeTeamId}
+            onChange={(e) => setActiveTeamId(e.target.value)}
+          />
+          Home
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="home-away"
+            value={homeAway.away}
+            checked={homeAway.away == activeTeamId}
+            onChange={(e) => setActiveTeamId(e.target.value)}
+          />
+          Away
+        </label>
+      </div>
+    )
   );
 };
 
@@ -493,6 +498,7 @@ export const getPassNetworkData = async (matchId) => {
   let passDataJson = toJSON(passData);
   let averagePositionsJson = toJSON(avereagePositions);
   const passNetwork = passDataJson.map((pass) => ({
+    ...pass,
     endX: averagePositionsJson.find(
       (position) => pass.recipient === position.passer
     ).startX,
@@ -501,15 +507,20 @@ export const getPassNetworkData = async (matchId) => {
     ).startY,
     startX: pass.startX,
     startY: pass.startY,
-    ...pass,
+    label: pass.label.split(" ")[1],
   }));
   return passNetwork;
+};
+
+export const norm = (val, max = 2, min = 0) => {
+  return (val - min) / (max - min);
 };
 
 export const PassNetwork = () => {
   const [pitch, setPitch] = useState(null);
   const [homeAway, setHomeAway] = useState(null);
   const [activeTeamId, setActiveTeamId] = useState(null);
+  const [passNetwork, setPassNetwork] = useState(null);
   // generate random shot data
   const pitchOptions = {
     height: 80, //in px
@@ -525,36 +536,48 @@ export const PassNetwork = () => {
     }
   }, []);
   const onMatchChange = async (match) => {
-    console.log({
-      home: match.home_team.home_team_id,
-      away: match.away_team.away_team_id,
-    })
     setHomeAway({
       home: match.home_team.home_team_id,
       away: match.away_team.away_team_id,
     });
     setActiveTeamId(match.home_team.home_team_id);
     const passNetwork = await getPassNetworkData(match.match_id);
-    passNetwork
-      .filter((pass) => pass.teamId == match.home_team.home_team_id)
-      .forEach((pass) => {
-        const layer = Rabona.layer({
-          type: "ballMovement",
-          data: [pass],
-          options: {
-            color: "yellow",
-          },
-        }).addTo(pitch);
-      });
+    setPassNetwork(passNetwork);
+    const filteredData = passNetwork.filter(
+      (pass) => pass.teamId == match.home_team.home_team_id
+    );
+    pitch.removeAllLayers();
+    Rabona.layer({
+      type: "ballMovement",
+      data: filteredData,
+      options: {
+        color: "yellow",
+        getWidth: (pass) => norm(pass?.count),
+      },
+    }).addTo(pitch);
   };
   const onActiveTeamChange = (teamId) => {
     console.log("teamId", teamId);
     setActiveTeamId(teamId);
+    pitch.removeAllLayers();
+    const filteredData = passNetwork.filter((pass) => pass.teamId == teamId);
+    Rabona.layer({
+      type: "ballMovement",
+      data: filteredData,
+      options: {
+        color: "yellow",
+        getWidth: (pass) => norm(pass?.count),
+      },
+    }).addTo(pitch);
   };
   return (
     <>
       <MatchSelector onChange={onMatchChange} />
-      <HomeAwaySelector homeAway={homeAway} setActiveTeamId={onActiveTeamChange} value={activeTeamId}/>
+      <HomeAwaySelector
+        homeAway={homeAway}
+        setActiveTeamId={onActiveTeamChange}
+        activeTeamId={activeTeamId}
+      />
       <div id="pitch2" style={{ width: "750px", margin: "auto" }} />
     </>
   );
