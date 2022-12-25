@@ -170,6 +170,8 @@ export const MatchSelector = ({ onChange }) => {
   );
 };
 
+### Try it out ⚽️
+
 <MatchSelector onChange={(e) => console.log(e.target.value)} />
 
 ## Creating the pass network
@@ -211,6 +213,7 @@ const match = await matchResponse.json();
 
 Then we are looping through the events and filtering out the passes and storing them in an array.
 We should make sure that event is a pass and it has a recipient. This way unsuccesful passes are not included.
+Don't forget the break the loop after the first substitution.
 
 ```js
 const passes = [];
@@ -244,7 +247,7 @@ const df = new DataFrame(passes);
 const avereagePositions = df
   .groupby(["passer", "teamId"])
   .agg({ startX: "mean", startY: ["mean", "count"] })
-  .rename({ startY_count: "pass_count" });
+  .rename({ startY_count: "total_pass_count" });
 ```
 
 Whole function looks like this
@@ -263,7 +266,7 @@ export const getPassNetworkData = async (matchId) => {
     if (event.type.name === "Substitution") {
       break;
     }
-    if (match[i].type.name === "Pass") {
+    if (match[i].type.name === "Pass" && event.pass.recipient) {
       passes.push({
         startX: event.location[0],
         startY: event.location[1],
@@ -276,11 +279,13 @@ export const getPassNetworkData = async (matchId) => {
       });
     }
   }
+  // highlight-start
   const df = new DataFrame(passes);
   const avereagePositions = df
     .groupby(["passer", "teamId"])
     .agg({ startX: "mean", startY: ["mean", "count"] })
-    .rename({ startY_count: "pass_count" });
+    .rename({ startY_count: "total_pass_count" });
+  // highlight-end
 };
 ```
 
@@ -295,11 +300,11 @@ This data would look like this
     "teamId": 1,
     "startX_mean": 49.91,
     "startY_mean": 8.515,
-    "pass_count": 20
+    "total_pass_count": 20
 }
 ```
 
-At the next stage we will filter out the passes between each player.
+At the next stage we will figure out the passes between each player.
 We will do this by grouping the passes by the passer and the recipient. Passer's name
 is also added to the DataFrame. We will use these information to visualize the nodes of the graph.
 
@@ -353,7 +358,7 @@ This will give us a DataFrame with most of the information we need to create the
     "teamId": 1,
     "startX_mean": 49.91,
     "startY_mean": 8.515,
-    "pass_count": 20
+    "total_pass_count": 20
 },
 {
     "passer": 12529,
@@ -362,7 +367,7 @@ This will give us a DataFrame with most of the information we need to create the
     ...
 ```
 
-`pass_count` is the total number of passes made by the passer and `count`
+`total_pass_count` is the total number of passes made by the passer and `count`
 is the number of passes made between the passer and the recipient.
 We still need to create recipient's average position and we will use it to create the edges of the graph.
 A simple `map` function will do the trick after converting the DataFrame to JSON.
@@ -370,24 +375,27 @@ Mapping function will find the recipient's average position from the `avereagePo
 and add it to the `passNetwork`. That will correspond the end locations of the passes.
 
 ```js
-const passDataJson = toJSON(passData);
-const averagePositionsJson = toJSON(avereagePositions);
+let passDataJson = toJSON(passData);
+let averagePositionsJson = toJSON(avereagePositions);
 const passNetwork = passDataJson.map((pass) => ({
+  ...pass,
   endX: averagePositionsJson.find(
     (position) => pass.recipient === position.passer
-  ).startX_mean,
+  ).startX,
   endY: averagePositionsJson.find(
     (position) => pass.recipient === position.passer
-  ).startY_mean,
-  startX: pass.startX_mean,
-  startY: pass.startY_mean,
-  ...pass,
+  ).startY,
+  startX: pass.startX,
+  startY: pass.startY,
+  label: pass.label.split(" ")[1], // simplify the name by getting the last or middle name
 }));
 ```
 
 ### Home and away selector component
 
-We will create a selector to select the home and away team. We can use a simple radio button for this.
+A simple home and away selector could be useful at this stage to visualize the passes for a specific team.
+An ordinary radio button will work just fine. We will use the `activeTeamId` state to keep track of the selected team.
+We will also use the `setActiveTeamId` function to update the state.
 
 ```jsx
 const HomeAwaySelector = ({ homeAway, setActiveTeamId, activeTeamId }) => {
@@ -417,6 +425,257 @@ const HomeAwaySelector = ({ homeAway, setActiveTeamId, activeTeamId }) => {
   );
 };
 ```
+
+### Final Result
+
+At this stage we will combine all the components we created earlier to create the final result.
+
+- `MatchSelector` component let us select the game we want to visualize the passes for.
+- `HomeAwaySelector` component is a team toggle to visualize the passes for.
+- `PassNetwork` is the component that visualizes the passes.
+
+In a pass network dependent on the density of passes between players specific lines will be thicker.
+`count` filed can be used to calculate the thickness of the lines. In other to make the lines more visible
+normalizing the data between 0 and 2 pixels is a good idea to make it fit with `Rabonajs` well.
+Have a look at this `norm` function.
+
+```js
+export const norm = (val, max = 2, min = 0) => {
+  return (val - min) / (max - min);
+};
+```
+
+So when we set the `Rabona` layer we can set the width of the lines simply like this.
+
+```js
+Rabona.layer({
+  type: "ballMovement",
+  data: passNetworkData,
+  options: {
+    color: "yellow",
+    // highlight-start
+    getWidth: (pass) => norm(pass?.count),
+    // highlight-end
+  },
+}).addTo(pitch);
+```
+
+:::tip
+`getWidth` is let you loop thourogh the data you passes and set the width of the lines dynamically.
+
+You can look at the dynamic coloring example here to see how to use `Rabonajs` to create a dynamic coloring for the ball movement.
+👉 [Plot Shots](https://orabazu.github.io/rabonajs-docs/docs/tutorial-basics/plot-shots)
+:::
+
+When combined together as a helper function it will look like this.
+
+```jsx
+const drawPassNetwork = (passNetwork, activeTeamId) => {
+  // Filter the data by the active team
+  const filteredData = passNetwork.filter(
+    (pass) => pass.teamId == activeTeamId
+  );
+  // Clear the pitch
+  pitch.removeAllLayers();
+  Rabona.layer({
+    type: "ballMovement",
+    data: filteredData,
+    options: {
+      color: "yellow",
+      getWidth: (pass) => norm(pass?.count),
+    },
+  }).addTo(pitch);
+};
+```
+
+We will also need to call the `onMatchChange` and `onActiveTeamChange` functions
+to update the `passNetwork` and `activeTeamId` states. These will be triggerd when `MatchSelector` and `HomeAwaySelector` components change.
+
+```js
+const onMatchChange = async (match) => {
+  // highlight-start
+  setHomeAway({
+    home: match.home_team.home_team_id,
+    away: match.away_team.away_team_id,
+  });
+  setActiveTeamId(match.home_team.home_team_id);
+  const passNetwork = await getPassNetworkData(match.match_id);
+  setPassNetwork(passNetwork);
+  drawPassNetwork(passNetwork, match.home_team.home_team_id);
+};
+const onActiveTeamChange = (teamId) => {
+  setActiveTeamId(teamId);
+  drawPassNetwork(passNetwork, teamId);
+};
+// highlight-end
+```
+
+## Putting it all together
+
+```jsx title="HomeAwaySelector.jsx"
+export const HomeAwaySelector = ({
+  homeAway,
+  setActiveTeamId,
+  activeTeamId,
+}) => {
+  return (
+    homeAway && (
+      <div>
+        <label>
+          <input
+            type="radio"
+            name="home-away"
+            value={homeAway.home}
+            checked={homeAway.home == activeTeamId}
+            onChange={(e) => setActiveTeamId(e.target.value)}
+          />
+          Home
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="home-away"
+            value={homeAway.away}
+            checked={homeAway.away == activeTeamId}
+            onChange={(e) => setActiveTeamId(e.target.value)}
+          />
+          Away
+        </label>
+      </div>
+    )
+  );
+};
+```
+
+```jsx title="getPassNetworkData"
+export const getPassNetworkData = async (matchId) => {
+  const matchResponse = await fetch(
+    "https://raw.githubusercontent.com/statsbomb/open-data/master/data/events/" +
+      matchId +
+      ".json"
+  );
+  const match = await matchResponse.json();
+  console.log("match", match);
+  const passes = [];
+  for (let i = 0; i < match.length; i++) {
+    const event = match[i];
+    if (event.type.name === "Substitution") {
+      break;
+    }
+    if (match[i].type.name === "Pass" && event.pass.recipient) {
+      passes.push({
+        startX: event.location[0],
+        startY: event.location[1],
+        endX: event.pass.end_location[0],
+        endY: event.pass.end_location[1],
+        teamId: event.team.id,
+        passer: event.player?.id,
+        passerName: event.player?.name,
+        recipient: event.pass.recipient?.id,
+      });
+    }
+  }
+  // highlight-start
+  const df = new DataFrame(passes);
+  const avereagePositions = df
+    .groupby(["passer", "teamId"])
+    .agg({ startX: "mean", startY: ["mean", "count"] })
+    .rename({ startX_mean: "startX", startY_mean: "startY" })
+    .rename({ startY_count: "total_pass_count" });
+  const passBetween = df
+    .groupby(["passer", "recipient", "passerName"])
+    .agg({ startY: ["count"] })
+    .rename({ startY_count: "count" })
+    .rename({ passerName: "label" });
+  const passData = merge({
+    left: passBetween,
+    right: avereagePositions,
+    on: ["passer"],
+    how: "left",
+  });
+  let passDataJson = toJSON(passData);
+  let averagePositionsJson = toJSON(avereagePositions);
+  const passNetwork = passDataJson.map((pass) => ({
+    ...pass,
+    endX: averagePositionsJson.find(
+      (position) => pass.recipient === position.passer
+    ).startX,
+    endY: averagePositionsJson.find(
+      (position) => pass.recipient === position.passer
+    ).startY,
+    startX: pass.startX,
+    startY: pass.startY,
+    label: pass.label.split(" ")[1],
+  }));
+  return passNetwork;
+  // highlight-end
+};
+```
+
+```jsx title="PassNetwork.jsx"
+export const PassNetwork = () => {
+  const [pitch, setPitch] = useState(null);
+  const [homeAway, setHomeAway] = useState(null);
+  const [activeTeamId, setActiveTeamId] = useState(null);
+  const [passNetwork, setPassNetwork] = useState(null);
+  const pitchOptions = {
+    height: 80, //in px
+    width: 120, //in px
+    padding: 100, // in px, distance between the pitch border lines and external border
+    linecolour: "#ffffff",
+    fillcolour: "#7ec850",
+  };
+  useEffect(() => {
+    if (!pitch) {
+      const pitch = Rabona.pitch("pitch2", pitchOptions);
+      setPitch(pitch);
+    }
+  }, []);
+  // highlight-start
+  const drawPassNetwork = (passNetwork, activeTeamId) => {
+    const filteredData = passNetwork.filter(
+      (pass) => pass.teamId == activeTeamId
+    );
+    pitch.removeAllLayers();
+    Rabona.layer({
+      type: "ballMovement",
+      data: filteredData,
+      options: {
+        color: "yellow",
+        getWidth: (pass) => norm(pass?.count),
+      },
+    }).addTo(pitch);
+  };
+  // highlight-start
+  const onMatchChange = async (match) => {
+    setHomeAway({
+      home: match.home_team.home_team_id,
+      away: match.away_team.away_team_id,
+    });
+    setActiveTeamId(match.home_team.home_team_id);
+    const passNetwork = await getPassNetworkData(match.match_id);
+    setPassNetwork(passNetwork);
+    drawPassNetwork(passNetwork, match.home_team.home_team_id);
+  };
+  const onActiveTeamChange = (teamId) => {
+    setActiveTeamId(teamId);
+    drawPassNetwork(passNetwork, match.home_team.home_team_id);
+  };
+  return (
+    <>
+      <MatchSelector onChange={onMatchChange} />
+      <HomeAwaySelector
+        homeAway={homeAway}
+        setActiveTeamId={onActiveTeamChange}
+        activeTeamId={activeTeamId}
+      />
+      <div id="pitch2" style={{ width: "750px", margin: "auto" }} />
+    </>
+  );
+};
+```
+
+### Try it out ⚽️
 
 export const HomeAwaySelector = ({
   homeAway,
@@ -483,7 +742,7 @@ export const getPassNetworkData = async (matchId) => {
     .groupby(["passer", "teamId"])
     .agg({ startX: "mean", startY: ["mean", "count"] })
     .rename({ startX_mean: "startX", startY_mean: "startY" })
-    .rename({ startY_count: "pass_count" });
+    .rename({ startY_count: "total_pass_count" });
   const passBetween = df
     .groupby(["passer", "recipient", "passerName"])
     .agg({ startY: ["count"] })
@@ -521,7 +780,6 @@ export const PassNetwork = () => {
   const [homeAway, setHomeAway] = useState(null);
   const [activeTeamId, setActiveTeamId] = useState(null);
   const [passNetwork, setPassNetwork] = useState(null);
-  // generate random shot data
   const pitchOptions = {
     height: 80, //in px
     width: 120, //in px
@@ -535,16 +793,9 @@ export const PassNetwork = () => {
       setPitch(pitch);
     }
   }, []);
-  const onMatchChange = async (match) => {
-    setHomeAway({
-      home: match.home_team.home_team_id,
-      away: match.away_team.away_team_id,
-    });
-    setActiveTeamId(match.home_team.home_team_id);
-    const passNetwork = await getPassNetworkData(match.match_id);
-    setPassNetwork(passNetwork);
+  const drawPassNetwork = (passNetwork, activeTeamId) => {
     const filteredData = passNetwork.filter(
-      (pass) => pass.teamId == match.home_team.home_team_id
+      (pass) => pass.teamId == activeTeamId
     );
     pitch.removeAllLayers();
     Rabona.layer({
@@ -556,19 +807,22 @@ export const PassNetwork = () => {
       },
     }).addTo(pitch);
   };
+  const onMatchChange = async (match) => {
+    if (!match) {
+      return;
+    }
+    setHomeAway({
+      home: match.home_team.home_team_id,
+      away: match.away_team.away_team_id,
+    });
+    setActiveTeamId(match.home_team.home_team_id);
+    const passNetwork = await getPassNetworkData(match.match_id);
+    setPassNetwork(passNetwork);
+    drawPassNetwork(passNetwork, match.home_team.home_team_id);
+  };
   const onActiveTeamChange = (teamId) => {
-    console.log("teamId", teamId);
     setActiveTeamId(teamId);
-    pitch.removeAllLayers();
-    const filteredData = passNetwork.filter((pass) => pass.teamId == teamId);
-    Rabona.layer({
-      type: "ballMovement",
-      data: filteredData,
-      options: {
-        color: "yellow",
-        getWidth: (pass) => norm(pass?.count),
-      },
-    }).addTo(pitch);
+    drawPassNetwork(passNetwork, teamId);
   };
   return (
     <>
