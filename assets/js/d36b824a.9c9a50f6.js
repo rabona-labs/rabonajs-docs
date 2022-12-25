@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkrabonjs_docs=self.webpackChunkrabonjs_docs||[]).push([[566],{159:s=>{s.exports=JSON.parse('{"permalink":"/rabonajs-docs/blog/tags/soccer","page":1,"postsPerPage":10,"totalPages":1,"totalCount":1,"blogDescription":"Blog","blogTitle":"Blog"}')}}]);
