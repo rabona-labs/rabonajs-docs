@@ -555,7 +555,6 @@ export const getPassNetworkData = async (matchId) => {
       ".json"
   );
   const match = await matchResponse.json();
-  console.log("match", match);
   const passes = [];
   for (let i = 0; i < match.length; i++) {
     const event = match[i];
@@ -726,7 +725,6 @@ export const getPassNetworkData = async (matchId) => {
       ".json"
   );
   const match = await matchResponse.json();
-  console.log("match", match);
   const passes = [];
   for (let i = 0; i < match.length; i++) {
     const event = match[i];
