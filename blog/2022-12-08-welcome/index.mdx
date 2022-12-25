@@ -51,7 +51,7 @@ export const PitchComponentWithPasses = () => {
   };
   useEffect(() => {
     if (!pitch) {
-      const pitch = Rabona.pitch("pitch2", pitchOptions);
+      const pitch = Rabona.pitch("pitch", pitchOptions);
       setPitch(pitch);
       const passes = [];
       for (let i = 0; i < 10; i++) {
@@ -74,7 +74,7 @@ export const PitchComponentWithPasses = () => {
       }).addTo(pitch);
     }
   }, []);
-  return <div id="pitch2" style={{ width: "500px", margin: "auto" }} />;
+  return <div id="pitch" style={{ width: "500px", margin: "auto" }} />;
 };
 
 <PitchComponentWithPasses />
