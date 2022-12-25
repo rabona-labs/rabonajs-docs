@@ -890,7 +890,7 @@ export const getPassNetworkData = async (matchId) => {
         startY: isHome(pass.team.id) ? event.location[1] : mirrorY(event.location[1], pitch),
         endX: isHome(pass.team.id) ? event.pass.end_location[0] : mirrorX(event.pass.end_location[0], pitch),
         endY: isHome(pass.team.id) ? event.pass.end_location[1] : mirrorY(event.pass.end_location[1], pitch),
-        // highlight-start
+        // highlight-end
         teamId: event.team.id,
         passer: event.player?.id,
         passerName: event.player?.name,
@@ -909,6 +909,8 @@ export const mirrorX = (val, pitch) => {
 export const mirrorY = (val, pitch) => {
   return pitch?.getOptions().height - val;;
 };
+
+### Try it out ⚽️
 
 export const PassNetwork2 = () => {
   const [pitch, setPitch] = useState(null);
